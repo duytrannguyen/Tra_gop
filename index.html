@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Công cụ tính góp HD SAISON</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --hds-red: #d71920;
+            --hds-blue: #213a8f;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f4f7fb;
+        }
+
+        .page-container {
+            width: min(100% - 24px, 1280px);
+            margin-inline: auto;
+            padding-block: clamp(12px, 4vw, 48px);
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 1180px;
+            overflow: hidden;
+            border: 0;
+            border-radius: clamp(14px, 2vw, 24px);
+            box-shadow: 0 16px 45px rgba(25, 45, 90, .12);
+        }
+
+        .hds-header {
+            background: linear-gradient(135deg, var(--hds-red), var(--hds-blue));
+        }
+
+        .hds-header h1 {
+            font-size: clamp(1.55rem, 4vw, 2.5rem);
+        }
+
+        .hds-header p {
+            font-size: clamp(.9rem, 2vw, 1.05rem);
+        }
+
+        .calculator-body {
+            padding: clamp(16px, 4vw, 48px);
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--hds-blue);
+            box-shadow: 0 0 0 .25rem rgba(33, 58, 143, .12);
+        }
+
+        .monthly-payment {
+            color: var(--hds-red);
+            font-size: clamp(1.75rem, 5vw, 3rem);
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+
+        .result-card {
+            min-height: 100%;
+            background: #fff;
+            border: 1px solid #e7ebf2;
+        }
+
+        .result-card strong {
+            overflow-wrap: anywhere;
+        }
+
+        .result-panel {
+            height: 100%;
+        }
+
+        .note-box {
+            background: #fff7ed;
+            border-left: 5px solid #f97316;
+        }
+
+        .btn-hds {
+            color: #fff;
+            background: var(--hds-red);
+            border-color: var(--hds-red);
+        }
+
+        .btn-hds:hover,
+        .btn-hds:focus {
+            color: #fff;
+            background: #b71218;
+            border-color: #b71218;
+        }
+
+        @media (min-width: 992px) {
+            .calculator-content {
+                display: grid;
+                grid-template-columns: minmax(310px, .85fr) minmax(500px, 1.35fr);
+                gap: clamp(24px, 4vw, 48px);
+                align-items: stretch;
+            }
+
+            .result-panel {
+                margin-top: 0 !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .page-container {
+                width: 100%;
+                padding: 0;
+            }
+
+            .calculator {
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .hds-header {
+                padding: 24px 16px !important;
+            }
+
+            .calculator-body {
+                padding: 16px;
+            }
+
+            .form-control-lg,
+            .form-select-lg,
+            .input-group-lg > .form-control,
+            .input-group-lg > .input-group-text {
+                min-height: 48px;
+                padding: .625rem .75rem;
+                font-size: 1rem;
+            }
+
+            .btn-lg {
+                padding: .75rem 1rem;
+                font-size: 1rem;
+            }
+
+            .note-box {
+                font-size: .9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page-container">
+        <div id="root"></div>
+    </main>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useEffect, useMemo, useState } = React;
+
+        const HDS_DATA = {
+            2000000: { 6: 411000, 9: 293000 },
+            3000000: { 6: 610000, 9: 433000 },
+            4000000: { 6: 809000, 9: 573000, 12: 458000, 15: 392000, 18: 348000 },
+            5000000: { 6: 1008000, 9: 714000, 12: 569000, 15: 486000, 18: 431000 },
+            6000000: { 6: 1207000, 9: 854000, 12: 680000, 15: 581000, 18: 515000 },
+            7000000: { 6: 1406000, 9: 994000, 12: 792000, 15: 676000, 18: 599000 },
+            8000000: { 6: 1605000, 9: 1134000, 12: 903000, 15: 771000, 18: 683000 },
+            9000000: { 6: 1804000, 9: 1274000, 12: 1014000, 15: 865000, 18: 766000 },
+            10000000: { 6: 2003000, 9: 1415000, 12: 1126000, 15: 960000, 18: 850000 },
+            11000000: { 6: 2202000, 9: 1555000, 12: 1237000, 15: 1055000, 18: 934000 },
+            12000000: { 6: 2401000, 9: 1695000, 12: 1348000, 15: 1150000, 18: 1018000 },
+            13000000: { 6: 2600000, 9: 1835000, 12: 1460000, 15: 1244000, 18: 1101000 },
+            14000000: { 6: 2799000, 9: 1975000, 12: 1571000, 15: 1339000, 18: 1185000 },
+            15000000: { 6: 2998000, 9: 2116000, 12: 1682000, 15: 1434000, 18: 1269000 },
+            16000000: { 6: 3198000, 9: 2256000, 12: 1794000, 15: 1529000, 18: 1353000 },
+            17000000: { 6: 3397000, 9: 2396000, 12: 1905000, 15: 1624000, 18: 1436000 },
+            18000000: { 6: 3596000, 9: 2536000, 12: 2016000, 15: 1718000, 18: 1520000 },
+            19000000: { 6: 3795000, 9: 2677000, 12: 2128000, 15: 1813000, 18: 1604000 },
+            20000000: { 6: 3994000, 9: 2817000, 12: 2239000, 15: 1908000, 18: 1688000 },
+            21000000: { 6: 4193000, 9: 2957000, 12: 2350000, 15: 2003000, 18: 1771000 },
+            22000000: { 6: 4392000, 9: 3097000, 12: 2462000, 15: 2097000, 18: 1855000 },
+            23000000: { 6: 4591000, 9: 3237000, 12: 2573000, 15: 2192000, 18: 1939000 },
+            24000000: { 6: 4790000, 9: 3378000, 12: 2684000, 15: 2287000, 18: 2023000 },
+            25000000: { 6: 4989000, 9: 3518000, 12: 2796000, 15: 2382000, 18: 2106000 },
+            26000000: { 6: 5188000, 9: 3658000, 12: 2907000, 15: 2476000, 18: 2190000 },
+            27000000: { 6: 5387000, 9: 3798000, 12: 3018000, 15: 2571000, 18: 2274000 },
+            28000000: { 6: 5586000, 9: 3938000, 12: 3130000, 15: 2666000, 18: 2358000 },
+            29000000: { 6: 5785000, 9: 4079000, 12: 3241000, 15: 2761000, 18: 2441000 },
+            30000000: { 6: 5984000, 9: 4219000, 12: 3352000, 15: 2855000, 18: 2525000 }
+        };
+
+        const AMOUNTS = Object.keys(HDS_DATA).map(Number).sort((a, b) => a - b);
+        const TERMS = [6, 9, 12, 15, 18];
+        const MIN_AMOUNT = 2000000;
+        const MAX_AMOUNT = 30000000;
+
+        const formatNumber = (value) => value ? Number(value).toLocaleString("vi-VN") : "";
+        const formatMoney = (value) => `${Math.round(value).toLocaleString("vi-VN")} đ`;
+
+        function getMonthlyPayment(amount, term) {
+            const eligibleAmounts = AMOUNTS.filter(item => HDS_DATA[item][term] !== undefined);
+
+            if (amount < eligibleAmounts[0] || amount > eligibleAmounts.at(-1)) {
+                return null;
+            }
+
+            const lower = [...eligibleAmounts].reverse().find(item => item <= amount);
+            const upper = eligibleAmounts.find(item => item >= amount);
+
+            if (lower === upper) return HDS_DATA[lower][term];
+
+            const lowerPayment = HDS_DATA[lower][term];
+            const upperPayment = HDS_DATA[upper][term];
+            return Math.round(
+                lowerPayment + ((amount - lower) / (upper - lower)) * (upperPayment - lowerPayment)
+            );
+        }
+
+        function App() {
+            const [amount, setAmount] = useState(10000000);
+            const [term, setTerm] = useState(12);
+            const [result, setResult] = useState({ amount: 10000000, term: 12, monthly: 1126000 });
+            const [error, setError] = useState("");
+
+            const availableTerms = useMemo(
+                () => amount >= 4000000 ? TERMS : [6, 9],
+                [amount]
+            );
+
+            useEffect(() => {
+                if (!availableTerms.includes(term)) setTerm(availableTerms[0]);
+            }, [availableTerms, term]);
+
+            const handleAmountChange = (event) => {
+                const digits = event.target.value.replace(/\D/g, "");
+                setAmount(digits ? Number(digits) : 0);
+                setError("");
+            };
+
+            const calculateLoan = (event) => {
+                event.preventDefault();
+
+                if (amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
+                    setError("Vui lòng nhập khoản vay từ 2.000.000 đ đến 30.000.000 đ.");
+                    return;
+                }
+
+                const monthly = getMonthlyPayment(amount, term);
+                if (monthly === null) {
+                    setError("Kỳ hạn này không áp dụng cho khoản vay đã nhập.");
+                    return;
+                }
+
+                setError("");
+                setResult({ amount, term, monthly });
+            };
+
+            return (
+                <section className="card calculator mx-auto">
+                    <header className="hds-header text-white text-center px-3 py-4 py-md-5">
+                        <h1 className="fw-bold mb-2">TÍNH GÓP HD SAISON</h1>
+                        <p className="mb-0 opacity-75">
+                            Áp dụng theo bảng trả góp HD SAISON tại cửa hàng
+                        </p>
+                    </header>
+
+                    <div className="card-body calculator-body">
+                        <div className="calculator-content">
+                        <form onSubmit={calculateLoan} className="align-self-start">
+                            <div className="row g-4">
+                                <div className="col-12">
+                                    <label htmlFor="loanAmount" className="form-label fw-semibold">
+                                        Số tiền cần vay
+                                    </label>
+                                    <div className="input-group input-group-lg">
+                                        <input
+                                            id="loanAmount"
+                                            className={`form-control ${error ? "is-invalid" : ""}`}
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={formatNumber(amount)}
+                                            onChange={handleAmountChange}
+                                            placeholder="Nhập số tiền cần vay"
+                                            aria-describedby="amountHelp"
+                                        />
+                                        <span className="input-group-text">đ</span>
+                                    </div>
+                                    <div id="amountHelp" className="form-text">
+                                        Từ 2.000.000 đ đến 30.000.000 đ
+                                    </div>
+                                </div>
+
+                                <div className="col-12">
+                                    <label htmlFor="loanTerm" className="form-label fw-semibold">
+                                        Kỳ hạn trả góp
+                                    </label>
+                                    <select
+                                        id="loanTerm"
+                                        className="form-select form-select-lg"
+                                        value={term}
+                                        onChange={(event) => setTerm(Number(event.target.value))}
+                                    >
+                                        {availableTerms.map(item => (
+                                            <option key={item} value={item}>{item} tháng</option>
+                                        ))}
+                                    </select>
+                                    <div className="form-text">
+                                        Khoản vay dưới 4 triệu áp dụng 6 hoặc 9 tháng
+                                    </div>
+                                </div>
+                            </div>
+
+                            {error && <div className="alert alert-danger mt-4 mb-0">{error}</div>}
+
+                            <button type="submit" className="btn btn-hds btn-lg fw-bold w-100 mt-4">
+                                TÍNH KHOẢN GÓP
+                            </button>
+                        </form>
+
+                        <section className="result-panel bg-light border rounded-4 p-3 p-md-4 mt-4" aria-live="polite">
+                            <p className="text-secondary mb-1">Số tiền phải góp mỗi tháng</p>
+                            <div className="monthly-payment fw-bold mb-4">
+                                {formatMoney(result.monthly)}
+                            </div>
+
+                            <div className="row g-3">
+                                <ResultCard label="Khoản vay" value={formatMoney(result.amount)} />
+                                <ResultCard label="Kỳ hạn" value={`${result.term} tháng`} />
+                                <ResultCard
+                                    label="Tổng góp dự kiến"
+                                    value={formatMoney(result.monthly * result.term)}
+                                />
+                            </div>
+
+                            <div className="note-box rounded-3 p-3 mt-4">
+                                <p className="mb-1"><strong>Thủ tục:</strong> CCCD gắn chip.</p>
+                                <p className="mb-1">
+                                    <strong>Khoản vay áp dụng:</strong> 2.000.000 đ - 30.000.000 đ.
+                                </p>
+                                <p className="mb-0">
+                                    <strong>Lưu ý:</strong> Trên 20 triệu có thể cần thẩm định thêm theo
+                                    quy định HD SAISON.
+                                </p>
+                            </div>
+                        </section>
+                        </div>
+                    </div>
+                </section>
+            );
+        }
+
+        function ResultCard({ label, value }) {
+            return (
+                <div className="col-sm-6 col-xl-4">
+                    <div className="result-card rounded-3 p-3">
+                        <span className="d-block small text-secondary mb-1">{label}</span>
+                        <strong className="fs-5">{value}</strong>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+</body>
+</html>
